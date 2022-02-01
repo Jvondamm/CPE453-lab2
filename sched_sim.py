@@ -23,61 +23,64 @@ def sched_fifo(jobs):
         job_count += 1
     print_avg(avg_turnaround / len(jobs), avg_wait / len(jobs))
 
+# gets the job index based on the shortest remaining burst time
+# as long as it has arrived (arrival time <= total time elapsed)
 def find_shortest_index(jobs, total_time):
-    cur_index = None
+    init_index = None
     for i in range(len(jobs)):
         if total_time >= jobs[i][2]:
-            cur_index = i
+            init_index = i
             break
-    if cur_index == None:
+    if init_index == None:
         return None
     else:
-        shortest = jobs[cur_index][1]
+        shortest = jobs[init_index][1]
 
     for i in range(len(jobs)):
         if jobs[i][1] < shortest and total_time >= jobs[i][2]:
             return i
-    return cur_index
+    return init_index
 
 def sched_srtn(jobs):
     avg_turnaround = 0
     avg_wait = 0
     total_time = 0
     cur_job = 0
+    job_count = len(jobs)
     wait_time = [0] * len(jobs)
     burst_time = [0] * len(jobs)
-    
+
     # add job ids in increasing order
     for i in range(len(jobs)):
         jobs[i].insert(0, i)
 
-    while(len(jobs) > 1):
-        #print(jobs)
-        # if current job has finished running ie. it's burst time is now zero, 
-        # terminate it and move to next in queue. Print stats and add to avg stats as well. 
+    while(len(jobs) >= 1):
+        # if current job has finished running ie. it's burst time is now zero,
+        # terminate it and move to next in queue. Print stats and add to avg stats as well.
         if jobs[cur_job][1] <= 0:
-            jobs.pop(cur_job)
-            cur_wait = wait_time[cur_job]
-            cur_turnaround = cur_wait + burst_time[cur_job]
+            job_id = jobs[cur_job][0]
+            cur_wait = wait_time[job_id]
+            cur_turnaround = cur_wait + burst_time[job_id]
             avg_wait += cur_wait
             avg_turnaround += cur_turnaround
-            print_job(cur_job, cur_turnaround, cur_wait)
-
+            print_job(job_id, cur_turnaround, cur_wait)
+            jobs.pop(cur_job)
             if len(jobs) == 0:
                 break
 
-        # find the next job that has the shortest burst time and switch to it, 
-        # but ensure that it has actually arrived by making sure it's less than total time elapsed
         cur_job = find_shortest_index(jobs, total_time)
 
         # decrease burst time of current job by 1 and increase total time elapsed by 1
         jobs[cur_job][1] -= 1
         total_time += 1
-        # increase wait time for every job except current job cuz its running
-        wait_time = [x + 1 for x in wait_time]
-        wait_time[cur_job] -= 1
 
-    print_avg(avg_turnaround / len(jobs), avg_wait / len(jobs))
+        # increase wait time for every job except current job cuz its running
+        # increase burst time of curret job
+        wait_time = [x + 1 for x in wait_time]
+        wait_time[jobs[cur_job][0]] -= 1
+        burst_time[jobs[cur_job][0]] += 1
+
+    print_avg(avg_turnaround / job_count, avg_wait / job_count)
 
 def sched_rr(jobs, q):
     return
@@ -85,7 +88,7 @@ def sched_rr(jobs, q):
 
 def main():
     num_args = len(sys.argv)
-    algo = 'SRTN'
+    algo = 'FIFO'
     q = 1
 
     if num_args > 1:
@@ -94,31 +97,31 @@ def main():
             # for each line split into int list and sort by second column (arrival time)
             jobs = sorted(([list(map(int, line.rstrip('\n').split())) for line in job_file]), key=lambda x: x[1])
 
-        # if num_args == 2:
-        #     sched_fifo(jobs, q)
-        # elif num_args == 4 or num_args == 6:
-        #     if sys.argv[2] == '-p' or sys.argv[2] == '-q':
-        #         if sys.argv[3] == 'SRTN' or sys.argv[3] == 'FIFO' or sys.argv[3] == 'RR':
-        #             algo = sys.argv[3]
-        #         elif sys.argv[3].isnumeric():
-        #             q = int(sys.argv[3]) 
-        #         else:
-        #             sys.exit()
-        #     else:
-        #         sys.exit()
-            
-        #     if num_args == 6:
-        #         if sys.argv[4] == '-p' or sys.argv[4] == '-q':
-        #             if sys.argv[5] == 'SRTN' or sys.argv[5] == 'FIFO' or sys.argv[3] == 'RR':
-        #                 algo = sys.argv[5]
-        #             elif sys.argv[5].isnumeric():
-        #                 q = int(sys.argv[5]) 
-        #             else:
-        #                 sys.exit()
-        #         else:
-        #             sys.exit()
-        # else:
-        #     sys.exit()
+        if num_args == 2:
+            sched_fifo(jobs, q)
+        elif num_args == 4 or num_args == 6:
+            if sys.argv[2] == '-p' or sys.argv[2] == '-q':
+                if sys.argv[3] == 'SRTN' or sys.argv[3] == 'FIFO' or sys.argv[3] == 'RR':
+                    algo = sys.argv[3]
+                elif sys.argv[3].isnumeric():
+                    q = int(sys.argv[3])
+                else:
+                    sys.exit()
+            else:
+                sys.exit()
+
+            if num_args == 6:
+                if sys.argv[4] == '-p' or sys.argv[4] == '-q':
+                    if sys.argv[5] == 'SRTN' or sys.argv[5] == 'FIFO' or sys.argv[3] == 'RR':
+                        algo = sys.argv[5]
+                    elif sys.argv[5].isnumeric():
+                        q = int(sys.argv[5])
+                    else:
+                        sys.exit()
+                else:
+                    sys.exit()
+        else:
+            sys.exit()
     else:
         sys.exit()
 
