@@ -1,5 +1,6 @@
 import sys
-from textwrap import shorten
+
+# have bash script call this python script
 
 def print_job(a, b, c):
     print('Job {0:03d} -- '.format(a), end='')
@@ -85,9 +86,22 @@ def sched_srtn(jobs):
 def sched_rr(jobs, q):
     return
 
+def set_algo(algo, algo_match):
+    if algo_match:
+        usage()
+        exit()
+    else:
+        algo_match = True
+        return algo
+
+def usage():
+    print("Usage: schedSim <job-file.txt> -p <ALGORITHM> -q <QUANTUM>")
+
 
 def main():
     num_args = len(sys.argv)
+    algo_match = False
+    q_match = False
     algo = 'FIFO'
     q = 1
 
@@ -97,33 +111,45 @@ def main():
             # for each line split into int list and sort by second column (arrival time)
             jobs = sorted(([list(map(int, line.rstrip('\n').split())) for line in job_file]), key=lambda x: x[1])
 
-        if num_args == 2:
-            sched_fifo(jobs, q)
-        elif num_args == 4 or num_args == 6:
-            if sys.argv[2] == '-p' or sys.argv[2] == '-q':
-                if sys.argv[3] == 'SRTN' or sys.argv[3] == 'FIFO' or sys.argv[3] == 'RR':
-                    algo = sys.argv[3]
-                elif sys.argv[3].isnumeric():
-                    q = int(sys.argv[3])
-                else:
-                    sys.exit()
+    for i in range(1, num_args):
+        if sys.argv[i] == 'FIFO':
+            algo = set_algo('FIFO', algo_match)
+        elif sys.argv[i] == 'SRTN':
+            algo = set_algo('SRTN', algo_match)
+        elif sys.argv[i] == 'RR':
+            algo = set_algo('RR', algo_match)
+        elif type(sys.argv[i]) is int:
+            if q_match:
+                usage()
+                exit()
             else:
-                sys.exit()
+                q = sys.argv[i]
 
-            if num_args == 6:
-                if sys.argv[4] == '-p' or sys.argv[4] == '-q':
-                    if sys.argv[5] == 'SRTN' or sys.argv[5] == 'FIFO' or sys.argv[3] == 'RR':
-                        algo = sys.argv[5]
-                    elif sys.argv[5].isnumeric():
-                        q = int(sys.argv[5])
-                    else:
-                        sys.exit()
-                else:
-                    sys.exit()
-        else:
-            sys.exit()
-    else:
-        sys.exit()
+    #     elif num_args == 4 or num_args == 6:
+    #         if sys.argv[2] == '-p' or sys.argv[2] == '-q':
+    #             if sys.argv[3] == 'SRTN' or sys.argv[3] == 'FIFO' or sys.argv[3] == 'RR':
+    #                 algo = sys.argv[3]
+    #             elif sys.argv[3].isnumeric():
+    #                 q = int(sys.argv[3])
+    #             else:
+    #                 sys.exit()
+    #         else:
+    #             sys.exit()
+
+    #         if num_args == 6:
+    #             if sys.argv[4] == '-p' or sys.argv[4] == '-q':
+    #                 if sys.argv[5] == 'SRTN' or sys.argv[5] == 'FIFO' or sys.argv[3] == 'RR':
+    #                     algo = sys.argv[5]
+    #                 elif sys.argv[5].isnumeric():
+    #                     q = int(sys.argv[5])
+    #                 else:
+    #                     sys.exit()
+    #             else:
+    #                 sys.exit()
+    #     else:
+    #         sys.exit()
+    # else:
+    #     sys.exit()
 
     if algo == 'SRTN':
         sched_srtn(jobs)
