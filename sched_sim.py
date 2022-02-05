@@ -130,17 +130,17 @@ def sched_rr(jobs, q):
             for job in jobs:
                 if job[2] <= curr_time and not is_in_rq(ready_queue, job[0]):
                     ready_queue.append(job[0])
-            
+
             # execute first job in RQ
             curr_job = ready_queue[0]
             curr_job_idx = get_job_idx(jobs, curr_job)
             burst_time_left = jobs[get_job_idx(jobs, curr_job)][1]
-            
+
             if burst_time_left - q < 0:
                 execution_time = burst_time_left
                 jobs.remove(jobs[curr_job_idx])
                 curr_time += execution_time
-                jobs[curr_job_idx].pop()          
+                jobs[curr_job_idx].pop()
             elif burst_time_left - q == 0:
                 execution_time = q
                 jobs.remove(jobs[curr_job_idx])
@@ -156,7 +156,7 @@ def sched_rr(jobs, q):
                         ready_queue.append(job[0])
                 ready_queue.pop()
                 ready_queue.append(curr_job_idx)
-            
+
             # update burst time for current job
             # update wait time for all other jobs in RQ
             burst_time[curr_job] += execution_time
@@ -173,7 +173,7 @@ def sched_rr(jobs, q):
 
     for i in range(num_jobs):
         print_avg(total_turnaround / num_jobs, total_wait / num_jobs)
-        
+
 # sets algorithm or exits if multiple algorithms in cmd line args
 def set_algo(algo, algo_match):
     if algo_match:
