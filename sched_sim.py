@@ -10,20 +10,22 @@ def print_avg(a, b):
     print('Average -- Turnaround {:.2f}  Wait {:.2f}'.format(a, b))
 
 def sched_fifo(jobs):
+    print(jobs)
     avg_turnaround = 0
     avg_wait = 0
     total_time = 0
     job_count = 0
     for job in jobs:
-        cur_wait = total_time
-        total_time += job[0]
-        cur_turnaround = total_time
+        cur_wait = total_time - job[2]
+        total_time += job[1]
+        cur_turnaround = total_time - job[2]
         avg_wait += cur_wait
         avg_turnaround += cur_turnaround
-        print_job(job_count, cur_turnaround, cur_wait)
+        print_job(job[0], cur_turnaround, cur_wait)
         job_count += 1
     print_avg(avg_turnaround / len(jobs), avg_wait / len(jobs))
 
+# gets lists of all currently active jobs
 def find_active(jobs, total_time):
     active_jobs = []
     for i in range(len(jobs)):
@@ -74,8 +76,6 @@ def sched_srtn(jobs):
 
         cur_job = index(jobs, total_time)
 
-        #print(total_time, jobs)
-
         # decrease burst time of current job by 1 and increase total time elapsed by 1
         # if it was None there were no jobs available at current time, so just inc. time by 1
         if cur_job != None:
@@ -124,8 +124,10 @@ def main():
             # add job ids in increasing order
             for i in range(len(jobs)):
                 jobs[i].insert(0, i)
+            # sort in order of arrival times
             jobs = sorted(jobs, key=lambda x: x[2])
 
+    # cmd line arg parsing
     for i in range(1, num_args):
         if sys.argv[i] == 'FIFO':
             algo = set_algo('FIFO', algo_match)
