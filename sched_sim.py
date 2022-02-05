@@ -1,4 +1,5 @@
 import sys
+import collections
 
 # have bash script call this python script
 
@@ -93,9 +94,86 @@ def sched_srtn(jobs):
 
     print_avg(avg_turnaround / job_count, avg_wait / job_count)
 
-def sched_rr(jobs, q):
-    return
+def get_lst_idx(jobs, id):
+    idx = -1
 
+    for job in jobs:
+        idx += 1
+        if job[0] == id:
+            return idx
+
+    return -1
+
+def is_in_rq (ready_queue, id):
+    return id in ready_queue
+
+def get_job_idx (jobs, id):
+    for i in range(len(jobs)):
+        if jobs[i][0] == id:
+            return i
+
+def sched_rr(jobs, q):
+    ready_queue = collections.deque()
+    curr_time = 0
+    wait_time = [0] * len(jobs)
+    burst_time = [0] * len(jobs)
+    total_wait = 0
+    total_burst = 0
+    total_turnaround = 0
+    num_jobs = len(jobs)
+
+    while (len(jobs) >= 1):
+        if len(ready_queue) == 0 and jobs[0][2] > curr_time:
+            curr_time += 1
+        else:
+            # check if any jobs should be put in RQ
+            for job in jobs:
+                if job[2] <= curr_time and not is_in_rq(ready_queue, job[0]):
+                    ready_queue.append(job[0])
+            
+            # execute first job in RQ
+            curr_job = ready_queue[0]
+            curr_job_idx = get_job_idx(jobs, curr_job)
+            burst_time_left = jobs[get_job_idx(jobs, curr_job)][1]
+            
+            if burst_time_left - q < 0:
+                execution_time = burst_time_left
+                jobs.remove(jobs[curr_job_idx])
+                curr_time += execution_time
+                jobs[curr_job_idx].pop()          
+            elif burst_time_left - q == 0:
+                execution_time = q
+                jobs.remove(jobs[curr_job_idx])
+                curr_time += execution_time
+                jobs[curr_job_idx].pop()
+            else:
+                execution_time = q
+                jobs[curr_job_idx][1] -= q
+                curr_time += execution_time
+                # check if any jobs should be put in RQ
+                for job in jobs:
+                    if job[2] <= curr_time and not is_in_rq(ready_queue, job[0]):
+                        ready_queue.append(job[0])
+                ready_queue.pop()
+                ready_queue.append(curr_job_idx)
+            
+            # update burst time for current job
+            # update wait time for all other jobs in RQ
+            burst_time[curr_job] += execution_time
+            for i in range(len(wait_time)):
+                if i != curr_job:
+                    wait_time[i] += execution_time
+
+    total_wait = sum(wait_time)
+    total_burst = sum(burst_time)
+    total_turnaround = total_wait + total_burst
+
+    for i in range(num_jobs):
+        print_job(i, wait_time[i] + burst_time[i], wait_time[i])
+
+    for i in range(num_jobs):
+        print_avg(total_turnaround / num_jobs, total_wait / num_jobs)
+        
 # sets algorithm or exits if multiple algorithms in cmd line args
 def set_algo(algo, algo_match):
     if algo_match:
