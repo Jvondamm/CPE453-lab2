@@ -24,23 +24,30 @@ def sched_fifo(jobs):
         job_count += 1
     print_avg(avg_turnaround / len(jobs), avg_wait / len(jobs))
 
-# gets the job index based on the shortest remaining burst time
-# as long as it has arrived (arrival time <= total time elapsed)
-def find_shortest_index(jobs, total_time):
-    init_index = None
+def find_active(jobs, total_time):
+    active_jobs = []
     for i in range(len(jobs)):
         if total_time >= jobs[i][2]:
-            init_index = i
-            break
-    if init_index == None:
-        return None
-    else:
-        shortest = jobs[init_index][1]
+            active_jobs.append(jobs[i])
+    return active_jobs
 
-    for i in range(len(jobs)):
-        if jobs[i][1] < shortest and total_time >= jobs[i][2]:
-            return i
-    return init_index
+# gets the job index based on the shortest remaining burst time
+# as long as it has arrived (arrival time <= total time elapsed)
+def index(jobs, total_time):
+    active_jobs = find_active(jobs, total_time)
+    if active_jobs == None or active_jobs == []:
+        return None
+    shortest_burst_index = 0
+    shortest_burst = active_jobs[0][1]
+    for i in range(len(active_jobs)):
+        if active_jobs[i][1] < shortest_burst:
+            shortest_burst = active_jobs[i][1]
+            shortest_burst_index = i
+        elif active_jobs[i][1] == shortest_burst: # if same remaining burst time, schedule job that came first
+            if active_jobs[i][2] < active_jobs[shortest_burst_index][2]:
+                shortest_burst = active_jobs[i][1]
+                shortest_burst_index = i
+    return shortest_burst_index
 
 def sched_srtn(jobs):
     avg_turnaround = 0
@@ -52,8 +59,6 @@ def sched_srtn(jobs):
     burst_time = [0] * len(jobs)
 
     while(len(jobs) >= 1):
-        print(jobs)
-        #print(jobs)
         # if current job has finished running ie. it's burst time is now zero,
         # terminate it and move to next in queue. Print stats and add to avg stats as well.
         if cur_job != None and jobs[cur_job][1] <= 0:
@@ -67,7 +72,9 @@ def sched_srtn(jobs):
             if len(jobs) == 0:
                 break
 
-        cur_job = find_shortest_index(jobs, total_time)
+        cur_job = index(jobs, total_time)
+
+        #print(total_time, jobs)
 
         # decrease burst time of current job by 1 and increase total time elapsed by 1
         # if it was None there were no jobs available at current time, so just inc. time by 1
@@ -75,9 +82,9 @@ def sched_srtn(jobs):
             jobs[cur_job][1] -= 1
         total_time += 1
 
-        # increase wait time for every job except current job cuz its running
+        # increase wait time for every job that is waiting except current job cuz its running
         for i in jobs:
-            if total_time >= i[2]:
+            if total_time > i[2]:
                 wait_time[i[0]] += 1
 
         # increase burst time of current job if not None
@@ -90,6 +97,7 @@ def sched_srtn(jobs):
 def sched_rr(jobs, q):
     return
 
+# sets algorithm or exits if multiple algorithms in cmd line args
 def set_algo(algo, algo_match):
     if algo_match:
         usage()
@@ -100,7 +108,6 @@ def set_algo(algo, algo_match):
 
 def usage():
     print("Usage: schedSim <job-file.txt> -p <ALGORITHM> -q <QUANTUM>")
-
 
 def main():
     num_args = len(sys.argv)
@@ -117,7 +124,7 @@ def main():
             # add job ids in increasing order
             for i in range(len(jobs)):
                 jobs[i].insert(0, i)
-            jobs = sorted(jobs, key=lambda x: x[1])
+            jobs = sorted(jobs, key=lambda x: x[2])
 
     for i in range(1, num_args):
         if sys.argv[i] == 'FIFO':
