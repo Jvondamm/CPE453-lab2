@@ -10,7 +10,6 @@ def print_avg(a, b):
     print('Average -- Turnaround {:.2f}  Wait {:.2f}'.format(a, b))
 
 def sched_fifo(jobs):
-    print(jobs)
     avg_turnaround = 0
     avg_wait = 0
     total_time = 0
