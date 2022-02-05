@@ -51,14 +51,12 @@ def sched_srtn(jobs):
     wait_time = [0] * len(jobs)
     burst_time = [0] * len(jobs)
 
-    # add job ids in increasing order
-    for i in range(len(jobs)):
-        jobs[i].insert(0, i)
-
     while(len(jobs) >= 1):
+        print(jobs)
+        #print(jobs)
         # if current job has finished running ie. it's burst time is now zero,
         # terminate it and move to next in queue. Print stats and add to avg stats as well.
-        if jobs[cur_job][1] <= 0:
+        if cur_job != None and jobs[cur_job][1] <= 0:
             job_id = jobs[cur_job][0]
             cur_wait = wait_time[job_id]
             cur_turnaround = cur_wait + burst_time[job_id]
@@ -72,14 +70,20 @@ def sched_srtn(jobs):
         cur_job = find_shortest_index(jobs, total_time)
 
         # decrease burst time of current job by 1 and increase total time elapsed by 1
-        jobs[cur_job][1] -= 1
+        # if it was None there were no jobs available at current time, so just inc. time by 1
+        if cur_job != None:
+            jobs[cur_job][1] -= 1
         total_time += 1
 
         # increase wait time for every job except current job cuz its running
-        # increase burst time of curret job
-        wait_time = [x + 1 for x in wait_time]
-        wait_time[jobs[cur_job][0]] -= 1
-        burst_time[jobs[cur_job][0]] += 1
+        for i in jobs:
+            if total_time >= i[2]:
+                wait_time[i[0]] += 1
+
+        # increase burst time of current job if not None
+        if cur_job != None:
+            wait_time[jobs[cur_job][0]] -= 1
+            burst_time[jobs[cur_job][0]] += 1
 
     print_avg(avg_turnaround / job_count, avg_wait / job_count)
 
@@ -109,7 +113,11 @@ def main():
         file_name = sys.argv[1]
         with open(file_name) as job_file:
             # for each line split into int list and sort by second column (arrival time)
-            jobs = sorted(([list(map(int, line.rstrip('\n').split())) for line in job_file]), key=lambda x: x[1])
+            jobs = ([list(map(int, line.rstrip('\n').split())) for line in job_file])
+            # add job ids in increasing order
+            for i in range(len(jobs)):
+                jobs[i].insert(0, i)
+            jobs = sorted(jobs, key=lambda x: x[1])
 
     for i in range(1, num_args):
         if sys.argv[i] == 'FIFO':
