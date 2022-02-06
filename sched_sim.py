@@ -94,32 +94,16 @@ def sched_srtn(jobs):
 
     print_avg(avg_turnaround / job_count, avg_wait / job_count)
 
-def get_lst_idx(jobs, id):
-    idx = -1
-
-    for job in jobs:
-        idx += 1
-        if job[0] == id:
-            return idx
-
-    return -1
-
-def is_in_rq (ready_queue, id):
-    return id in ready_queue
-
 def get_job_idx (jobs, id):
     for i in range(len(jobs)):
         if jobs[i][0] == id:
             return i
 
 def sched_rr(jobs, q):
-    ready_queue = collections.deque()
+    ready_queue = []
     curr_time = 0
     wait_time = [0] * len(jobs)
     burst_time = [0] * len(jobs)
-    total_wait = 0
-    total_burst = 0
-    total_turnaround = 0
     num_jobs = len(jobs)
 
     while (len(jobs) >= 1):
@@ -128,41 +112,54 @@ def sched_rr(jobs, q):
         else:
             # check if any jobs should be put in RQ
             for job in jobs:
-                if job[2] <= curr_time and not is_in_rq(ready_queue, job[0]):
-                    ready_queue.append(job[0])
-
+                if job[2] == curr_time:
+                    ready_queue.insert(len(ready_queue), job[0])
+            
             # execute first job in RQ
-            curr_job = ready_queue[0]
+            curr_job = ready_queue[0] #curr job id
             curr_job_idx = get_job_idx(jobs, curr_job)
-            burst_time_left = jobs[get_job_idx(jobs, curr_job)][1]
-
-            if burst_time_left - q < 0:
-                execution_time = burst_time_left
-                jobs.remove(jobs[curr_job_idx])
-                curr_time += execution_time
-                jobs[curr_job_idx].pop()
-            elif burst_time_left - q == 0:
-                execution_time = q
-                jobs.remove(jobs[curr_job_idx])
-                curr_time += execution_time
-                jobs[curr_job_idx].pop()
-            else:
-                execution_time = q
-                jobs[curr_job_idx][1] -= q
-                curr_time += execution_time
+            burst_time_left = jobs[curr_job_idx][1]
+            
+            if burst_time_left < q:
+                curr_time += burst_time_left
+                burst_time[curr_job] += burst_time_left
+                ready_queue.pop(0)
+                del jobs[curr_job_idx]
+                # update wait time for all other jobs in RQ
+                for job in ready_queue:
+                    wait_time[job] += burst_time_left
                 # check if any jobs should be put in RQ
                 for job in jobs:
-                    if job[2] <= curr_time and not is_in_rq(ready_queue, job[0]):
-                        ready_queue.append(job[0])
-                ready_queue.pop()
-                ready_queue.append(curr_job_idx)
-
-            # update burst time for current job
-            # update wait time for all other jobs in RQ
-            burst_time[curr_job] += execution_time
-            for i in range(len(wait_time)):
-                if i != curr_job:
-                    wait_time[i] += execution_time
+                    if job[2] <= curr_time and not job[0] in ready_queue:
+                        wait_time[job[0]] += (curr_time - job[2])
+                        ready_queue.insert(len(ready_queue), job[0])
+            elif burst_time_left == q:
+                curr_time += q
+                burst_time[curr_job] += q
+                ready_queue.pop(0)
+                del jobs[curr_job_idx]
+                # update wait time for all other jobs in RQ
+                for job in ready_queue:
+                    wait_time[job] += q
+                # check if any jobs should be put in RQ
+                for job in jobs:
+                    if job[2] <= curr_time and not job[0] in ready_queue:
+                        wait_time[job[0]] += (curr_time - job[2])
+                        ready_queue.insert(len(ready_queue), job[0])
+            else:
+                jobs[curr_job_idx][1] -= q
+                curr_time += q
+                burst_time[curr_job] += q
+                ready_queue.pop(0)
+                # update wait time for all other jobs in RQ
+                for job in ready_queue:
+                    wait_time[job] += q
+                # check if any jobs should be put in RQ
+                for job in jobs:
+                    if job[0] != curr_job and job[2] <= curr_time and not job[0] in ready_queue:
+                        wait_time[job[0]] += (curr_time - job[2])
+                        ready_queue.insert(len(ready_queue), job[0])
+                ready_queue.insert(len(ready_queue), curr_job)
 
     total_wait = sum(wait_time)
     total_burst = sum(burst_time)
@@ -171,8 +168,7 @@ def sched_rr(jobs, q):
     for i in range(num_jobs):
         print_job(i, wait_time[i] + burst_time[i], wait_time[i])
 
-    for i in range(num_jobs):
-        print_avg(total_turnaround / num_jobs, total_wait / num_jobs)
+    print_avg(total_turnaround / num_jobs, total_wait / num_jobs)
 
 # sets algorithm or exits if multiple algorithms in cmd line args
 def set_algo(algo, algo_match):
@@ -212,38 +208,13 @@ def main():
             algo = set_algo('SRTN', algo_match)
         elif sys.argv[i] == 'RR':
             algo = set_algo('RR', algo_match)
-        elif type(sys.argv[i]) is int:
+        elif sys.argv[i].isdigit():
             if q_match:
                 usage()
                 exit()
             else:
-                q = sys.argv[i]
-
-    #     elif num_args == 4 or num_args == 6:
-    #         if sys.argv[2] == '-p' or sys.argv[2] == '-q':
-    #             if sys.argv[3] == 'SRTN' or sys.argv[3] == 'FIFO' or sys.argv[3] == 'RR':
-    #                 algo = sys.argv[3]
-    #             elif sys.argv[3].isnumeric():
-    #                 q = int(sys.argv[3])
-    #             else:
-    #                 sys.exit()
-    #         else:
-    #             sys.exit()
-
-    #         if num_args == 6:
-    #             if sys.argv[4] == '-p' or sys.argv[4] == '-q':
-    #                 if sys.argv[5] == 'SRTN' or sys.argv[5] == 'FIFO' or sys.argv[3] == 'RR':
-    #                     algo = sys.argv[5]
-    #                 elif sys.argv[5].isnumeric():
-    #                     q = int(sys.argv[5])
-    #                 else:
-    #                     sys.exit()
-    #             else:
-    #                 sys.exit()
-    #     else:
-    #         sys.exit()
-    # else:
-    #     sys.exit()
+                q_match = True
+                q = int(sys.argv[i])
 
     if algo == 'SRTN':
         sched_srtn(jobs)
