@@ -114,12 +114,12 @@ def sched_rr(jobs, q):
             for job in jobs:
                 if job[2] == curr_time:
                     ready_queue.insert(len(ready_queue), job[0])
-            
+
             # execute first job in RQ
             curr_job = ready_queue[0] #curr job id
             curr_job_idx = get_job_idx(jobs, curr_job)
             burst_time_left = jobs[curr_job_idx][1]
-            
+
             if burst_time_left < q:
                 curr_time += burst_time_left
                 burst_time[curr_job] += burst_time_left
@@ -202,19 +202,27 @@ def main():
 
     # cmd line arg parsing
     for i in range(1, num_args):
-        if sys.argv[i] == 'FIFO':
-            algo = set_algo('FIFO', algo_match)
-        elif sys.argv[i] == 'SRTN':
-            algo = set_algo('SRTN', algo_match)
-        elif sys.argv[i] == 'RR':
-            algo = set_algo('RR', algo_match)
-        elif sys.argv[i].isdigit():
-            if q_match:
+        if sys.argv[i] == '-p':
+            if i == num_args:
                 usage()
                 exit()
-            else:
-                q_match = True
-                q = int(sys.argv[i])
+            elif sys.argv[i + 1] == 'FIFO':
+                algo = set_algo('FIFO', algo_match)
+            elif sys.argv[i + 1] == 'SRTN':
+                algo = set_algo('SRTN', algo_match)
+            elif sys.argv[i + 1] == 'RR':
+                algo = set_algo('RR', algo_match)
+        elif sys.argv[i] == '-q':
+            if i == num_args:
+                usage()
+                exit()
+            elif sys.argv[i + 1].isdigit():
+                if q_match:
+                    usage()
+                    exit()
+                else:
+                    q_match = True
+                    q = int(sys.argv[i + 1])
 
     if algo == 'SRTN':
         sched_srtn(jobs)
