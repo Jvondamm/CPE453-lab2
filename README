@@ -1,8 +1,10 @@
+CPE453, lab2
+Joshua von Damm, Chenchen Nie
+
 -- RUNNING --
 
-compile with:   make or make schedSim
+no compilation or Makefile as written in python.
 run with:       ./schedSim <args>
-clean wtih      make clean
 
 -- Questions -- 
 
